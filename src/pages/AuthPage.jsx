@@ -95,7 +95,7 @@ export default function AuthPage() {
                 <Modal.Body>
                     <h2 className="mb-4" style={{ fontWeight: "bold" }}>
                         {modalShow === "SignUp"
-                            ? "Create you account"
+                            ? "Create your account"
                             : "Log in to your account"}
                     </h2>
                     <Form 
@@ -119,7 +119,7 @@ export default function AuthPage() {
                             By signing up, you agree to the Terms of Service and Privacy Policy including Cookie Use. SigmaTweets may use your contact information, including your email address and phone number for purposes outlined in our Privacy Policy, like keeping your account secure and personalising our services, including ads. Learn more. Others will be able to find you by email or phone number, when provided, unless you choose otherwise here.
                         </p>
 
-                        <Button className="rounded-pill" type="submit">{modalShow === "Signup" ? "Sign up" : "Log in"}</Button>
+                        <Button className="rounded-pill" type="submit">{modalShow === "SignUp" ? "Sign up" : "Log in"}</Button>
                     </Form>
                 </Modal.Body>
             </Modal>
