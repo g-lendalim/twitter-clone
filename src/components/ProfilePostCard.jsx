@@ -1,11 +1,13 @@
 import { useContext, useState } from 'react';
 import { Button, Col, Image, Row } from 'react-bootstrap';
 import { useDispatch } from "react-redux";
-import { likePost, removeLikeFromPost } from "../features/posts/postsSlice";
+import { deletePost, likePost, removeLikeFromPost } from "../features/posts/postsSlice";
 import { AuthContext } from './AuthProvider';
+import UpdatePostModal from './UpdatePostModal';
+import pic from "../assets/profile-picture.jpg";
 
 export default function ProfilePostCard({ post }) {
-  const { content, id: postId } = post;
+  const { content, id: postId, imageUrl } = post;
   const [likes, setLikes] = useState(post.likes || []);
   const dispatch = useDispatch();
   const { currentUser } = useContext(AuthContext);
@@ -14,8 +16,10 @@ export default function ProfilePostCard({ post }) {
   //user has liked the post if their id is in the likes array
   const isLiked = likes.includes(userId);
 
-  const pic =
-    'https://pbs.twimg.com/profile_images/1587405892437221376/h167J1b2_400x400.jpg';
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  const handleShowUpdateModal = () => setShowUpdateModal(true);
+  const handleCloseUpdateModal = () => setShowUpdateModal(false);
 
   // useEffect(() => {
   //   fetch(`${BASE_URL}/likes/post/${postId}`)
@@ -38,6 +42,10 @@ export default function ProfilePostCard({ post }) {
     dispatch(removeLikeFromPost({ userId, postId }));
   };
 
+  const handleDelete = () => {
+    dispatch(deletePost({ userId, postId }));
+  }
+
   return (
     <Row
       className="p-3"
@@ -54,6 +62,7 @@ export default function ProfilePostCard({ post }) {
         <strong>Glenda</strong>
         <span> @glenda.lim · March 21</span>
         <p>{content}</p>
+        <Image src={imageUrl} style={{ width: 150 }} />
         <div className="d-flex justify-content-between">
           <Button variant="light">
             <i className="bi bi-chat"></i>
@@ -75,6 +84,11 @@ export default function ProfilePostCard({ post }) {
           <Button variant="light">
             <i className="bi bi-upload"></i>
           </Button>
+          <Button variant="light">
+            <i className="bi bi-pencil-square" onClick={handleShowUpdateModal}></i>
+          </Button>
+          <Button variant="light" onClick={handleDelete}><i className="bi bi-trash"></i></Button>
+          <UpdatePostModal show={showUpdateModal} handleClose={handleCloseUpdateModal} postId={postId} originalPostContent={content} />
         </div>
       </Col>
     </Row>

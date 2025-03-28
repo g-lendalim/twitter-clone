@@ -1,6 +1,62 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
-import { db } from "../../firebase"; 
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { db, storage } from "../../firebase";
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+
+export const deletePost = createAsyncThunk(
+  "posts/deletePost",
+  async ({ userId, postId }) => {
+    try {
+      //Reference to the post
+      const postRef = doc(db, `users/${userId}/posts/${postId}`);
+      //Delete the post
+      await deleteDoc(postRef);
+      //Return the ID of the deleted post
+      return postId;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+)
+
+export const updatePost = createAsyncThunk(
+  "posts/updatePost",
+  async ({ userId, postId, newPostContent, newFile }) => {
+    try {
+      //Upload the new file to the storage if it exists and get its URL
+      let newImageUrl;
+      if (newFile) {
+        const imageRef = ref(storage, `posts/${newFile.name}`);
+        const response = await uploadBytes(imageRef, newFile);
+        newImageUrl = await getDownloadURL(response.ref);
+      }
+      //Reference to the existing post
+      const postRef = doc(db, `users/${userId}/posts/${postId}`);
+      //Get the current post data
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const postData = postSnap.data();
+        //Update the post content and the image URL
+        const updatedData = {
+          ...postData, 
+          content: newPostContent || postData.content,
+          imageUrl: newImageUrl || postData.imageUrl,
+        };
+        //Update the existing document in Firestore
+        await updateDoc(postRef, updatedData);
+        //Return the pst with updated daya
+        const updatedPost = { id: postId, ...updatedData };
+        return updatedPost;
+      } else {
+        throw new Error("Post does not exist");
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+);
 
 //Async thunk for fetching a user's posts
 export const fetchPostsByUser = createAsyncThunk(
@@ -25,14 +81,20 @@ export const fetchPostsByUser = createAsyncThunk(
 
 export const savePost = createAsyncThunk(
   'posts/savePost',
-  async ({ userId, postContent }) => {
+  async ({ userId, postContent, file }) => {
     try {
+      let imageUrl = "";
+      console.log(file);
+      if (file !== null) {
+        const imageRef = ref(storage, `post/${file.name}`);
+        const response = await uploadBytes(imageRef, file);
+        imageUrl = await getDownloadURL(response.ref);
+      }
       const postsRef = collection(db, `users/${userId}/posts`);
       console.log(`users/${userId}/posts`);
       //Since no ID is given, Firestore auto generate a unique ID for this new document
       const newPostRef = doc(postsRef);
-      console.log(postContent);
-      await setDoc(newPostRef, { content: postContent, likes: [] });
+      await setDoc(newPostRef, { content: postContent, likes: [], imageUrl });
       const newPost = await getDoc(newPostRef);
 
       const post = {
@@ -52,7 +114,7 @@ export const likePost = createAsyncThunk(
   "posts/likePost",
   async ({ userId, postId }) => {
     try {
-      const postRef = doc(db, `user/${userId}/posts/${postId}`);
+      const postRef = doc(db, `users/${userId}/posts/${postId}`);
 
       const docSnap = await getDoc(postRef);
 
@@ -126,7 +188,22 @@ const postsSlice = createSlice({
             (id) => id !== userId
           );
         }
-      });
+      })
+      .addCase(updatePost.fulfilled, (state, action) => {
+        const updatedPost = action.payload;
+        //Find and update the post in the state
+        const postIndex = state.posts.findIndex(
+          (post) => post.id === updatedPost.id
+        );
+        if (postIndex !== -1) {
+          state.posts[postIndex] = updatedPost;
+        }
+      })
+      .addCase(deletePost.fulfilled, (state, action) => {
+        const deletedPostId = action.payload;
+        //Filter out the deleted post from the state
+        state.posts = state.posts.filter((post) => post.id !== deletedPostId);
+      })
   },
 });
 

@@ -7,21 +7,21 @@ export default function ChatbotModal({ show, handleClose }) {
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    const API_URL = 'https://api.openai.com/v1/chat/completion';
+    const API_URL = 'https://api.openai.com/v1/chat/completions';
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
     const messagesToSend = [
       ...allMessages,
       {
         role: 'user',
-        content: message,
+        content: message
       },
     ];
 
     const response = await fetch(API_URL, {
       method: 'POST',
-      header: {
-        Authorization: `Bearer ${apiKey}`,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -33,6 +33,7 @@ export default function ChatbotModal({ show, handleClose }) {
     const data = await response.json();
 
     if (data) {
+      console.log(data)
       let newAllMessages = [...messagesToSend, data.choices[0].message];
       setAllMessages(newAllMessages);
       setMessage('');
@@ -45,11 +46,11 @@ export default function ChatbotModal({ show, handleClose }) {
       </Modal.Header>
       <Modal.Body>
         <div>
-          {allMessages.map((msg, index) => {
+          {allMessages.map((msg, index) => (
             <p key={index}>
-              <strong>{msg.role}</strong> {msg.content}
-            </p>;
-          })}
+              <strong>{msg.role}:</strong> {msg.content}
+            </p>
+          ))}
         </div>
 
         <Form onSubmit={sendMessage}>
